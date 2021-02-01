@@ -3,14 +3,17 @@ import json
 import os
 
 import matplotlib.pyplot as plt
+import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
+realm = 'ru'
+
 
 def init():
-    url = 'https://wotlabs.net/sea/tankStats'
-    txtfile = 'html_wn8.txt'
-    jsonfile = 'json_wn8.txt'
+    url = 'https://wotlabs.net/' + realm + '/tankStats'
+    txtfile = realm + 'html_wn8.txt'
+    jsonfile = realm + 'json_wn8.txt'
     # print(strhtml.text)
     strhtml = ''
 
@@ -80,8 +83,11 @@ def rank(list, rank=8, is_gold=False, paichu=None, tank_type=None):
                     filtered.append(item)
             else:
                 filtered.append(item)
-    # df = pd.DataFrame(filtered)
-    # df.to_excel(str(rank) + '_wn8.xlsx', index=False)
+
+    title = realm.upper() + ' Level ' + str(rank) + ' ' + '_'.join(tank_type) + str('_G' if is_gold else '')
+
+    df = pd.DataFrame(filtered)
+    df.to_excel(title + '_wn8.xlsx', index=False)
 
     rate = []
     damage = []
@@ -142,13 +148,12 @@ def rank(list, rank=8, is_gold=False, paichu=None, tank_type=None):
     plt.ylim(int(min(damage) / 100) * 100, int(max(damage) / 100) * 100 + 100)  # 10
     plt.xlabel("Win Rate", fontdict={'size': 16})
     plt.ylabel("WN8 Rate", fontdict={'size': 16})
-    title = str(rank) + '_'.join(tank_type) + str('_G' if is_gold else '')
-    plt.title('Level ' + title + ' WN8 Rank List', fontdict={'size': 20})
+    plt.title(title + ' WN8 Rank List', fontdict={'size': 20})
     # plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
     # plt.text(x=0.5, y=damage_max / 2, s="葛炮未来", fontsize=100,
     #          color="gray", alpha=0.6)
     plt.grid(axis="x", which="major")
-    plt.savefig('fig' + title + '_wn8.png')
+    plt.savefig(title + '_wn8.png')
     # a = [np.linspace(0, 1, 1600)] * 5000
     # fig.figimage(a, cmap=plt.get_cmap('rainbow_r'), alpha=0.2)
     # plt.show()
@@ -156,23 +161,25 @@ def rank(list, rank=8, is_gold=False, paichu=None, tank_type=None):
 
 if __name__ == '__main__':
     data_list = init()
-    # rank(data_list, 8, type=['TD'], is_gold=True)
-    # rank(data_list, 8, type=['LT'], is_gold=True)
-    # rank(data_list, 8, type=['MT'], is_gold=True)
-    # rank(data_list, 8, type=['HT'], is_gold=True)
+    rank(data_list, 8, tank_type=['TD'], is_gold=True)
+    rank(data_list, 8, tank_type=['LT'], is_gold=True)
+    rank(data_list, 8, tank_type=['MT'], is_gold=True)
+    rank(data_list, 8, tank_type=['HT'], is_gold=True)
     #
-    # rank(data_list, 8, type=['TD'], is_gold=False)
-    # rank(data_list, 8, type=['LT'], is_gold=False)
-    # rank(data_list, 8, type=['MT'], is_gold=False)
-    # rank(data_list, 8, type=['HT'], is_gold=False)
+    # rank(data_list, 6, tank_type=['MT', 'HT'], is_gold=False)
+    # rank(data_list, 7, tank_type=['MT', 'HT'], is_gold=False)
+    rank(data_list, 8, tank_type=['TD'], is_gold=False)
+    rank(data_list, 8, tank_type=['LT'], is_gold=False)
+    rank(data_list, 8, tank_type=['MT'], is_gold=False)
+    rank(data_list, 8, tank_type=['HT'], is_gold=False)
     #
-    # rank(data_list, 9, type=['TD'], is_gold=False)
-    # rank(data_list, 9, type=['LT'], is_gold=False)
-    # rank(data_list, 9, type=['MT'], is_gold=False)
-    # rank(data_list, 9, type=['HT'], is_gold=False)
+    rank(data_list, 9, tank_type=['TD'], is_gold=False)
+    rank(data_list, 9, tank_type=['LT'], is_gold=False)
+    rank(data_list, 9, tank_type=['MT'], is_gold=False)
+    rank(data_list, 9, tank_type=['HT'], is_gold=False)
     #
-    # rank(data_list, 10, type=['LT'], is_gold=False)
-    # rank(data_list, 10, type=['MT'], is_gold=False)
-    # rank(data_list, 10, type=['HT'], is_gold=False)
-    # rank(data_list, 10, type=['TD'], is_gold=False)
-    rank(data_list, 10, is_gold=False)
+    rank(data_list, 10, tank_type=['LT'], is_gold=False)
+    rank(data_list, 10, tank_type=['MT'], is_gold=False)
+    rank(data_list, 10, tank_type=['HT'], is_gold=False)
+    rank(data_list, 10, tank_type=['TD'], is_gold=False)
+    # rank(data_list, 10, is_gold=False)
