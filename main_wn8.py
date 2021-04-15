@@ -7,7 +7,36 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
+from enum import Enum
+
+
+class RankType(Enum):
+    # 为序列值指定value值
+    All = 1
+    GoldOnly = 2
+    SilverOnly = 3
+
+
 realm = 'ru'
+type_color = {
+    'LT': 'green',
+    'MT': '#fff447',
+    'HT': '#737373',
+    'SPG': 'red',
+    'TD': '#0a8fff'
+}
+wn8_color = {
+    'dred': '#BAAAAD',
+    'red': '#f11919',
+    'orange': '#ff8a00',
+    'yellow': '#e6df27',
+    'green': '#77e812',
+    'dgreen': '#459300',
+    'blue': '#2ae4ff',
+    'dblue': '#00a0b8',
+    'purple': '#c64cff',
+    'dpurple': '#8225ad'
+}
 
 
 def init():
@@ -67,24 +96,34 @@ def init():
     return data_list
 
 
-def rank(list, rank=8, is_gold=False, paichu=None, tank_type=None):
+def rank(list, rank=[8], is_gold=RankType.All, paichu=None, tank_type=None):
     if tank_type is None:
         tank_type = ['LT', 'MT', 'HT', 'TD', 'SPG']
     if paichu is None:
         paichu = ['Chimera']
     filtered = []
     for item in list:
-        if item.get('WN8') >= 500 \
-                and rank == item.get('Level') \
+        if item.get('WN8') >= 1000 \
+                and item.get('WinRate') >= 0.5 \
+                and item.get('Level') in rank \
                 and item.get('Type') in tank_type \
                 and item.get('Name') not in paichu:
-            if is_gold:
+            if is_gold == RankType.GoldOnly:
                 if item.get('Gold'):
+                    filtered.append(item)
+            if is_gold == RankType.SilverOnly:
+                if not item.get('Gold'):
                     filtered.append(item)
             else:
                 filtered.append(item)
 
-    title = realm.upper() + ' Level ' + str(rank) + ' ' + '_'.join(tank_type) + str('_G' if is_gold else '')
+    tank_gold_type = '_All'
+    if is_gold == RankType.GoldOnly:
+        tank_gold_type = '_G'
+    if is_gold == RankType.SilverOnly:
+        tank_gold_type = '_S'
+
+    title = realm.upper() + ' Level ' + str(rank) + ' ' + '_'.join(tank_type) + tank_gold_type
 
     df = pd.DataFrame(filtered)
     df.to_excel(title + '_wn8.xlsx', index=False)
@@ -95,26 +134,6 @@ def rank(list, rank=8, is_gold=False, paichu=None, tank_type=None):
     color = []
     edge_color = []
 
-    type_color = {
-        'LT': 'green',
-        'MT': 'yellow',
-        'HT': 'grey',
-        'SPG': 'red',
-        'TD': 'blue'
-    }
-    wn8_color = {
-        'dred': '#BAAAAD',
-        'red': '#f11919',
-        'orange': '#ff8a00',
-        'yellow': '#e6df27',
-        'green': '#77e812',
-        'dgreen': '#459300',
-        'blue': '#2ae4ff',
-        'dblue': '#00a0b8',
-        'purple': '#c64cff',
-        'dpurple': '#8225ad'
-    }
-
     for item in filtered:
         rate.append(item.get('WinRate'))
         d = item.get('WN8')
@@ -124,7 +143,7 @@ def rank(list, rank=8, is_gold=False, paichu=None, tank_type=None):
         edge_color.append(type_color.get(item.get('Type')))
 
     # plt.style.use('seaborn')
-    fig = plt.figure(figsize=(10, 30))
+    fig = plt.figure(figsize=(20, 60))
     # pltfig(fig)
     s = [n ** 2 / 1000 for n in damage]
 
@@ -135,7 +154,7 @@ def rank(list, rank=8, is_gold=False, paichu=None, tank_type=None):
     # 也可给其传入数值直接计算归一化的结果
     norm_y = norm(rate)
 
-    plt.scatter(rate, damage, c=color, s=s, edgecolor=edge_color, cmap='rainbow_r', alpha=0.9)
+    plt.scatter(rate, damage, c=edge_color, s=s, linewidths=5, edgecolor=color, cmap='rainbow_r', alpha=1)
     # cbar = plt.colorbar()
 
     for i in range(len(name)):
@@ -161,25 +180,37 @@ def rank(list, rank=8, is_gold=False, paichu=None, tank_type=None):
 
 if __name__ == '__main__':
     data_list = init()
-    rank(data_list, 8, tank_type=['TD'], is_gold=True)
-    rank(data_list, 8, tank_type=['LT'], is_gold=True)
-    rank(data_list, 8, tank_type=['MT'], is_gold=True)
-    rank(data_list, 8, tank_type=['HT'], is_gold=True)
+    # rank(data_list, 8, tank_type=['LT'], is_gold=True)
+    # rank(data_list, 8, tank_type=['TD'], is_gold=True)
+    # rank(data_list, 8, tank_type=['MT'], is_gold=True)
+    # rank(data_list, 8, tank_type=['HT'], is_gold=True)
+    # rank(data_list, [8, 9, 10], tank_type=['HT', 'MT', 'TD'], is_gold=False)
+    # rank(data_list, [6], tank_type=['LT', 'HT', 'MT', 'TD'], is_gold=False)
+    rank(data_list, [7], tank_type=['LT', 'HT', 'MT', 'TD', 'SPG'], is_gold=RankType.All)
+    rank(data_list, [8], tank_type=['LT', 'HT', 'MT', 'TD', 'SPG'], is_gold=RankType.All)
+    rank(data_list, [9], tank_type=['LT', 'HT', 'MT', 'TD', 'SPG'], is_gold=RankType.All)
+    rank(data_list, [10], tank_type=['LT', 'HT', 'MT', 'TD', 'SPG'], is_gold=RankType.All)
+
+    rank(data_list, [8], tank_type=['LT', 'HT', 'MT', 'TD', 'SPG'], is_gold=RankType.GoldOnly)
+
+    rank(data_list, [8], tank_type=['LT', 'HT', 'MT', 'TD', 'SPG'], is_gold=RankType.SilverOnly)
+    rank(data_list, [9], tank_type=['LT', 'HT', 'MT', 'TD', 'SPG'], is_gold=RankType.SilverOnly)
+    rank(data_list, [10], tank_type=['LT', 'HT', 'MT', 'TD', 'SPG'], is_gold=RankType.SilverOnly)
     #
     # rank(data_list, 6, tank_type=['MT', 'HT'], is_gold=False)
     # rank(data_list, 7, tank_type=['MT', 'HT'], is_gold=False)
-    rank(data_list, 8, tank_type=['TD'], is_gold=False)
-    rank(data_list, 8, tank_type=['LT'], is_gold=False)
-    rank(data_list, 8, tank_type=['MT'], is_gold=False)
-    rank(data_list, 8, tank_type=['HT'], is_gold=False)
-    #
-    rank(data_list, 9, tank_type=['TD'], is_gold=False)
-    rank(data_list, 9, tank_type=['LT'], is_gold=False)
-    rank(data_list, 9, tank_type=['MT'], is_gold=False)
-    rank(data_list, 9, tank_type=['HT'], is_gold=False)
-    #
-    rank(data_list, 10, tank_type=['LT'], is_gold=False)
-    rank(data_list, 10, tank_type=['MT'], is_gold=False)
-    rank(data_list, 10, tank_type=['HT'], is_gold=False)
-    rank(data_list, 10, tank_type=['TD'], is_gold=False)
+    # rank(data_list, 8, tank_type=['TD'], is_gold=False)
+    # rank(data_list, 8, tank_type=['LT'], is_gold=False)
+    # rank(data_list, 8, tank_type=['MT'], is_gold=False)
+    # rank(data_list, 8, tank_type=['HT'], is_gold=False)
+    # #
+    # rank(data_list, 9, tank_type=['TD'], is_gold=False)
+    # rank(data_list, 9, tank_type=['LT'], is_gold=False)
+    # rank(data_list, 9, tank_type=['MT'], is_gold=False)
+    # rank(data_list, 9, tank_type=['HT'], is_gold=False)
+    # #
+    # rank(data_list, 10, tank_type=['LT'], is_gold=False)
+    # rank(data_list, 10, tank_type=['MT'], is_gold=False)
+    # rank(data_list, 10, tank_type=['HT'], is_gold=False)
+    # rank(data_list, 10, tank_type=['TD'], is_gold=False)
     # rank(data_list, 10, is_gold=False)
